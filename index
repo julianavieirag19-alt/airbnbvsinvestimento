@@ -1,14 +1,74 @@
-import { useState, useMemo } from "react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Airbnb vs Investimento</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.12.7/Recharts.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f0f0f; --bg2: #161616; --bg3: #1e1e1e;
+      --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.12);
+      --text: #e8e6e1; --text2: #888; --text3: #555;
+      --orange: #D85A30; --green: #1D9E75; --gold: #c8a96e;
+      --color-background-info: #1a150a;
+      --color-background-success: #091410;
+      --color-background-danger: #160909;
+      --color-border-success: #1D9E75;
+      --color-border-danger: #D85A30;
+      --color-text-primary: #e8e6e1; --color-text-secondary: #888;
+      --color-text-tertiary: #555; --color-text-info: #c8a96e;
+      --color-text-success: #1D9E75; --color-text-danger: #D85A30;
+      --border-radius-md: 4px;
+    }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 14px; line-height: 1.5; min-height: 100vh;
+    }
+    #root { max-width: 800px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+    header {
+      border-bottom: 1px solid var(--border2);
+      padding-bottom: 1.25rem; margin-bottom: 2rem;
+      display: flex; align-items: baseline; gap: 1rem;
+    }
+    header h1 {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 1rem; font-weight: 500; color: var(--text); letter-spacing: 0.04em;
+    }
+    header span { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text3); }
+    input[type="range"] {
+      -webkit-appearance: none; appearance: none;
+      width: 100%; height: 2px; background: var(--border2); outline: none; cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 11px; height: 11px;
+      border-radius: 50%; background: var(--gold); cursor: pointer; transition: transform 0.1s;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.4); }
+    input[type="range"]::-moz-range-thumb {
+      width: 11px; height: 11px; border-radius: 50%;
+      background: var(--gold); cursor: pointer; border: none;
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useMemo } = React;
+const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } = Recharts;
 
 const fmt = (v) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 const fmtPct = (v) => v.toFixed(2).replace(".", ",") + "%";
 
 const IR_TABLE = [
-  { dias: 180, aliq: 0.225 },
-  { dias: 360, aliq: 0.20 },
-  { dias: 720, aliq: 0.175 },
-  { dias: Infinity, aliq: 0.15 },
+  { dias: 180, aliq: 0.225 }, { dias: 360, aliq: 0.20 },
+  { dias: 720, aliq: 0.175 }, { dias: Infinity, aliq: 0.15 },
 ];
 function getIR(meses) {
   const dias = meses * 30;
@@ -17,19 +77,22 @@ function getIR(meses) {
 
 const SLIDER = ({ label, value, min, max, step, onChange, display, hint }) => (
   <div style={{ marginBottom: 14 }}>
-    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-      <span style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>{label}{hint && <span style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginLeft: 5 }}>{hint}</span>}</span>
-      <span style={{ fontSize: 13, fontWeight: 500 }}>{display}</span>
+    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+      <span style={{ fontSize: 12, color: "var(--text2)" }}>
+        {label}
+        {hint && <span style={{ fontSize: 10, color: "var(--text3)", marginLeft: 5, fontFamily: "'IBM Plex Mono', monospace" }}>{hint}</span>}
+      </span>
+      <span style={{ fontSize: 12, fontWeight: 500, fontFamily: "'IBM Plex Mono', monospace", color: "var(--gold)" }}>{display}</span>
     </div>
-    <input type="range" min={min} max={max} step={step} value={value} onChange={e => onChange(Number(e.target.value))} style={{ width: "100%" }} />
+    <input type="range" min={min} max={max} step={step} value={value} onChange={e => onChange(Number(e.target.value))} />
   </div>
 );
 
-const Card = ({ label, value, sub, color }) => (
-  <div style={{ background: "var(--color-background-secondary)", borderRadius: "var(--border-radius-md)", padding: "0.75rem 1rem" }}>
-    <div style={{ fontSize: 12, color: "var(--color-text-secondary)", marginBottom: 4 }}>{label}</div>
-    <div style={{ fontSize: 20, fontWeight: 500, color: color || "var(--color-text-primary)" }}>{value}</div>
-    {sub && <div style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginTop: 2 }}>{sub}</div>}
+const Card = ({ label, value, sub }) => (
+  <div style={{ background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 4, padding: "12px 14px" }}>
+    <div style={{ fontSize: 11, color: "var(--text3)", marginBottom: 6, fontFamily: "'IBM Plex Mono', monospace", textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</div>
+    <div style={{ fontSize: 20, fontWeight: 500, fontFamily: "'IBM Plex Mono', monospace", color: "var(--text)" }}>{value}</div>
+    {sub && <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 4, fontFamily: "'IBM Plex Mono', monospace" }}>{sub}</div>}
   </div>
 );
 
@@ -38,16 +101,24 @@ const CustomTooltip = ({ active, payload, label }) => {
   const anos = Math.floor(label / 12), mr = label % 12;
   const tempo = anos > 0 ? `${anos}a${mr > 0 ? ` ${mr}m` : ""}` : `${label}m`;
   return (
-    <div style={{ background: "var(--color-background-primary)", border: "0.5px solid var(--color-border-secondary)", borderRadius: 8, padding: "10px 14px", fontSize: 12 }}>
-      <div style={{ fontWeight: 500, marginBottom: 6 }}>{tempo}</div>
+    <div style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 4, padding: "10px 14px", fontSize: 12, fontFamily: "'IBM Plex Mono', monospace" }}>
+      <div style={{ fontWeight: 500, marginBottom: 6, color: "var(--text)" }}>{tempo}</div>
       {payload.map(p => (
-        <div key={p.dataKey} style={{ color: p.color, marginBottom: 2 }}>{p.name}: {fmt(p.value)}</div>
+        <div key={p.dataKey} style={{ color: p.color, marginBottom: 3 }}>{p.name}: {fmt(p.value)}</div>
       ))}
     </div>
   );
 };
 
-export default function App() {
+function SectionLabel({ children }) {
+  return (
+    <div style={{ fontSize: 10, fontWeight: 500, color: "var(--text3)", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "'IBM Plex Mono', monospace", paddingBottom: 6, borderBottom: "1px solid var(--border)" }}>
+      {children}
+    </div>
+  );
+}
+
+function App() {
   const [valor, setValor] = useState(500000);
   const [diaria, setDiaria] = useState(350);
   const [ocupacao, setOcupacao] = useState(65);
@@ -62,7 +133,9 @@ export default function App() {
   const [horizonte, setHorizonte] = useState(60);
 
   const anos = Math.floor(horizonte / 12), mR = horizonte % 12;
-  const tempoLabel = anos > 0 ? `${anos} ano${anos > 1 ? "s" : ""}${mR > 0 ? ` e ${mR} mês${mR > 1 ? "es" : ""}` : ""}` : `${horizonte} meses`;
+  const tempoLabel = anos > 0
+    ? `${anos} ano${anos > 1 ? "s" : ""}${mR > 0 ? ` e ${mR} mês${mR > 1 ? "es" : ""}` : ""}`
+    : `${horizonte} meses`;
 
   const calcMes = useMemo(() => {
     const diasOcupados = 30 * ocupacao / 100;
@@ -70,7 +143,7 @@ export default function App() {
     const taxaPlat = receitaBruta * taxaAirbnb / 100;
     const limpezaMes = diasOcupados > 0 ? Math.ceil(diasOcupados / 3) * limpeza : 0;
     const custos = taxaPlat + limpezaMes + condominio + iptu + manutencao;
-    const ir = receitaBruta * 0.075; // carnê-leão simplificado ~7,5% médio
+    const ir = receitaBruta * 0.075;
     const liquido = receitaBruta - custos - ir;
     return { receitaBruta, taxaPlat, limpezaMes, custos, ir, liquido };
   }, [diaria, ocupacao, taxaAirbnb, condominio, iptu, manutencao, limpeza]);
@@ -79,28 +152,19 @@ export default function App() {
     const taxaAnual = cdi * pctCDI / 100;
     const taxaMensal = Math.pow(1 + taxaAnual / 100, 1 / 12) - 1;
     const valorizacaoMensal = Math.pow(1 + valorizacao / 100, 1 / 12) - 1;
-
     let airbnbAcum = 0;
     const data = [];
-
     for (let m = 0; m <= horizonte; m++) {
       const bruto = valor * Math.pow(1 + taxaMensal, m);
       const rend = bruto - valor;
       const ir = rend * getIR(m || 1);
       const invLiq = bruto - ir;
-
       const valorImovel = valor * Math.pow(1 + valorizacaoMensal, m);
       if (m > 0) airbnbAcum += calcMes.liquido;
       const airbnbTotal = airbnbAcum + valorImovel;
-
       data.push({ mes: m, investimento: Math.round(invLiq), airbnb: Math.round(airbnbTotal) });
     }
-
-    return {
-      chartData: data,
-      airbnbFinal: data[horizonte].airbnb,
-      invFinal: data[horizonte].investimento,
-    };
+    return { chartData: data, airbnbFinal: data[horizonte].airbnb, invFinal: data[horizonte].investimento };
   }, [valor, cdi, pctCDI, valorizacao, horizonte, calcMes]);
 
   const renda = calcMes.liquido;
@@ -111,11 +175,15 @@ export default function App() {
   const melhor = diff > 0 ? "airbnb" : "investimento";
 
   return (
-    <div style={{ padding: "1rem 0", maxWidth: 740, margin: "0 auto" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 20 }}>
+    <div>
+      <header>
+        <h1>Airbnb vs Investimento</h1>
+        <span>comparativo de patrimônio</span>
+      </header>
 
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32, marginBottom: 24 }}>
         <div>
-          <div style={{ fontSize: 12, fontWeight: 500, color: "var(--color-text-tertiary)", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.06em" }}>Airbnb</div>
+          <SectionLabel>Airbnb</SectionLabel>
           <SLIDER label="Valor do imóvel" value={valor} min={100000} max={3000000} step={10000} onChange={setValor} display={fmt(valor)} />
           <SLIDER label="Diária média" value={diaria} min={50} max={2000} step={10} onChange={setDiaria} display={fmt(diaria)} />
           <SLIDER label="Ocupação" value={ocupacao} min={10} max={100} step={1} onChange={setOcupacao} display={`${ocupacao}%`} hint={`≈ ${Math.round(30 * ocupacao / 100)} dias/mês`} />
@@ -128,18 +196,16 @@ export default function App() {
         </div>
 
         <div>
-          <div style={{ fontSize: 12, fontWeight: 500, color: "var(--color-text-tertiary)", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.06em" }}>Investimento (110% CDI)</div>
+          <SectionLabel>Investimento (renda fixa)</SectionLabel>
           <SLIDER label="CDI anual" value={cdi} min={5} max={25} step={0.01} onChange={setCdi} display={fmtPct(cdi)} />
           <SLIDER label="% do CDI" value={pctCDI} min={80} max={130} step={1} onChange={setPctCDI} display={`${pctCDI}%`} />
-          <div style={{ padding: "10px 12px", background: "var(--color-background-info)", borderRadius: "var(--border-radius-md)", fontSize: 13, color: "var(--color-text-info)", marginBottom: 20 }}>
+          <div style={{ padding: "10px 12px", background: "var(--color-background-info)", border: "1px solid rgba(200,169,110,0.2)", borderRadius: 4, fontSize: 12, color: "var(--gold)", marginBottom: 20, fontFamily: "'IBM Plex Mono', monospace" }}>
             Taxa efetiva: <strong>{fmtPct(taxaEfetiva)}</strong> ao ano
           </div>
-
-          <div style={{ fontSize: 12, fontWeight: 500, color: "var(--color-text-tertiary)", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.06em" }}>Horizonte</div>
+          <SectionLabel>Horizonte</SectionLabel>
           <SLIDER label="Período de análise" value={horizonte} min={6} max={240} step={6} onChange={setHorizonte} display={tempoLabel} />
-
-          <div style={{ marginTop: 16, borderTop: "0.5px solid var(--color-border-tertiary)", paddingTop: 16 }}>
-            <div style={{ fontSize: 12, fontWeight: 500, color: "var(--color-text-tertiary)", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>Airbnb — resumo mensal</div>
+          <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid var(--border)" }}>
+            <SectionLabel>Airbnb — resumo mensal</SectionLabel>
             {[
               ["Receita bruta", fmt(calcMes.receitaBruta)],
               ["Taxa plataforma", `− ${fmt(calcMes.taxaPlat)}`],
@@ -147,58 +213,69 @@ export default function App() {
               ["Cond. + IPTU + manut.", `− ${fmt(condominio + iptu + manutencao)}`],
               ["IR estimado (carnê-leão)", `− ${fmt(calcMes.ir)}`],
             ].map(([k, v]) => (
-              <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--color-text-secondary)", marginBottom: 5 }}>
+              <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--text2)", marginBottom: 5, fontFamily: "'IBM Plex Mono', monospace" }}>
                 <span>{k}</span><span>{v}</span>
               </div>
             ))}
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 500, borderTop: "0.5px solid var(--color-border-tertiary)", paddingTop: 8, marginTop: 4 }}>
-              <span>Renda líquida/mês</span>
-              <span style={{ color: renda >= 0 ? "var(--color-text-success)" : "var(--color-text-danger)" }}>{fmt(renda)}</span>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 500, borderTop: "1px solid var(--border)", paddingTop: 8, marginTop: 6, fontFamily: "'IBM Plex Mono', monospace" }}>
+              <span style={{ color: "var(--text2)" }}>Renda líquida/mês</span>
+              <span style={{ color: renda >= 0 ? "var(--green)" : "var(--orange)" }}>{fmt(renda)}</span>
             </div>
           </div>
         </div>
       </div>
 
-      <div style={{ borderTop: "0.5px solid var(--color-border-tertiary)", paddingTop: 18, marginBottom: 18 }}>
-        <div style={{ fontSize: 12, fontWeight: 500, color: "var(--color-text-tertiary)", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.06em" }}>Resultado em {tempoLabel}</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0,1fr))", gap: 10, marginBottom: 10 }}>
+      <div style={{ borderTop: "1px solid var(--border)", paddingTop: 20, marginBottom: 20 }}>
+        <SectionLabel>Resultado em {tempoLabel}</SectionLabel>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
           <Card label="Patrimônio via Airbnb (renda + imóvel)" value={fmt(airbnbFinal)} sub={`Yield líq. anual: ${fmtPct(yieldLiquido)} | Bruto: ${fmtPct(yieldBruto)}`} />
           <Card label="Patrimônio via investimento (líq. IR)" value={fmt(invFinal)} sub={`${fmtPct(taxaEfetiva)} a.a. — IR ${fmtPct(getIR(horizonte) * 100)}`} />
         </div>
-        <div style={{ padding: "12px 16px", borderRadius: "var(--border-radius-md)", border: `1.5px solid ${diff > 0 ? "var(--color-border-success)" : "var(--color-border-danger)"}`, background: diff > 0 ? "var(--color-background-success)" : "var(--color-background-danger)" }}>
-          <div style={{ fontSize: 13, color: diff > 0 ? "var(--color-text-success)" : "var(--color-text-danger)", fontWeight: 500 }}>
+        <div style={{ padding: "12px 16px", borderRadius: 4, border: `1px solid ${diff > 0 ? "var(--color-border-success)" : "var(--color-border-danger)"}`, background: diff > 0 ? "var(--color-background-success)" : "var(--color-background-danger)" }}>
+          <div style={{ fontSize: 13, color: diff > 0 ? "var(--green)" : "var(--orange)", fontWeight: 500, fontFamily: "'IBM Plex Mono', monospace" }}>
             {melhor === "airbnb"
               ? `Airbnb é mais vantajoso por ${fmt(diff)} neste cenário`
               : `Investimento é mais vantajoso por ${fmt(Math.abs(diff))} neste cenário`}
           </div>
-          <div style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginTop: 3 }}>
+          <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 4 }}>
             Airbnb inclui renda acumulada + valorização estimada do imóvel ({fmtPct(valorizacao)} a.a.)
           </div>
         </div>
       </div>
 
-      <div style={{ borderTop: "0.5px solid var(--color-border-tertiary)", paddingTop: 18 }}>
-        <div style={{ fontSize: 12, fontWeight: 500, color: "var(--color-text-tertiary)", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>Evolução patrimonial</div>
-        <div style={{ display: "flex", gap: 16, marginBottom: 10, fontSize: 12, color: "var(--color-text-secondary)" }}>
-          <span style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 10, height: 10, borderRadius: 2, background: "#D85A30", display: "inline-block" }}></span> Airbnb (renda + imóvel)</span>
-          <span style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 10, height: 10, borderRadius: 2, background: "#1D9E75", display: "inline-block" }}></span> Investimento (líq. IR)</span>
+      <div style={{ borderTop: "1px solid var(--border)", paddingTop: 20 }}>
+        <SectionLabel>Evolução patrimonial</SectionLabel>
+        <div style={{ display: "flex", gap: 20, marginBottom: 12, fontSize: 12, color: "var(--text2)" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ width: 10, height: 10, borderRadius: 2, background: "#D85A30", display: "inline-block" }}></span>
+            Airbnb (renda + imóvel)
+          </span>
+          <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ width: 10, height: 10, borderRadius: 2, background: "#1D9E75", display: "inline-block" }}></span>
+            Investimento (líq. IR)
+          </span>
         </div>
-        <div style={{ position: "relative", width: "100%", height: 240 }}>
+        <div style={{ width: "100%", height: 240 }}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(128,128,128,0.15)" />
-              <XAxis dataKey="mes" tickFormatter={m => m % 24 === 0 ? `${m / 12}a` : ""} tick={{ fontSize: 11 }} />
-              <YAxis tickFormatter={v => `${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11 }} width={52} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+              <XAxis dataKey="mes" tickFormatter={m => m % 24 === 0 ? `${m / 12}a` : ""} tick={{ fontSize: 11, fill: "#555", fontFamily: "IBM Plex Mono" }} />
+              <YAxis tickFormatter={v => `${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11, fill: "#555", fontFamily: "IBM Plex Mono" }} width={52} />
               <Tooltip content={<CustomTooltip />} />
               <Line type="monotone" dataKey="airbnb" name="Airbnb" stroke="#D85A30" dot={false} strokeWidth={2} />
               <Line type="monotone" dataKey="investimento" name="Investimento" stroke="#1D9E75" dot={false} strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>
         </div>
-        <div style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginTop: 8 }}>
+        <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 10, lineHeight: 1.7 }}>
           * IR do investimento pelas alíquotas regressivas (22,5% → 15%). IR do Airbnb estimado em 7,5% sobre receita bruta (carnê-leão — alíquota real depende da sua faixa de renda). Não considera vacância prolongada, custos de mobília, reformas ou gestão por terceiros.
         </div>
       </div>
     </div>
   );
 }
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
